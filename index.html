@@ -431,9 +431,9 @@
         "will", "won't", "going", "gonna", "tomorrow", "next", "future", "plan", "hope", "want"
     ]);
 
-    const contextMeaningWords = new Set(["means", "mean", "saying", "quote", "reflection", "message", "lesson", "value", "people", "life", "when"]);
-    const contextOpinionFutureWords = new Set(["think", "believe", "agree", "disagree", "opinion", "important", "future", "will", "going", "gonna", "apply", "plan", "hope"]);
-    const contextExamplePastWords = new Set(["example", "instance", "story", "experience", "happened", "last", "ago", "yesterday", "when", "was", "were", "went", "had", "did", "learned"]);
+    const contextMeaningWords = new Set(["means", "mean", "saying", "quote", "reflection", "message", "lesson", "value", "people", "life", "when", "because"]);
+    const contextOpinionFutureWords = new Set(["think", "believe", "agree", "disagree", "opinion", "important", "future", "will", "going", "gonna", "apply", "plan", "hope", "sure", "works"]);
+    const contextExamplePastWords = new Set(["example", "instance", "story", "experience", "happened", "last", "ago", "yesterday", "when", "was", "were", "went", "had", "did", "learned", "wanted", "told", "before"]);
 
     function toggleTranscriptBox() {
         const sec = document.getElementById("transcriptSection");
@@ -537,7 +537,7 @@
                 const res = event.results[i];
                 const alt = res[0];
                 const txt = alt.transcript.trim();
-                const conf = typeof alt.confidence === "number" ? alt.confidence : 0.85;
+                const conf = typeof alt.confidence === "number" ? Math.min(1, Math.max(0, alt.confidence)) : 0.85;
 
                 if (res.isFinal) {
                     tempFinal += txt + " ";
@@ -671,34 +671,66 @@
         const wordCount = words.length;
         const duration = Math.max(1, elapsedSeconds);
 
+        const syntaxAndLexicalIssues = [];
+        const flaggedWordsForPractice = new Set();
+
+        for (let i = 0; i < words.length; i++) {
+            const w = words[i];
+            const next1 = words[i + 1] || "";
+            const next2 = words[i + 2] || "";
+            const windowAhead = `${next1} ${next2}`;
+
+            if ((w === "trusting" || w === "trust") && /\b(page|site|website|app|system|code|script|form|test)\b/.test(windowAhead)) {
+                syntaxAndLexicalIssues.push(
+                    `Sintaxis / vocabulario: dijiste "<strong>${w} ${windowAhead.trim()}</strong>"; si tu intención era probar la página/sistema, usa "<strong>testing</strong>" en vez de "<em>${w}</em>" (<em>trust</em> significa confiar, <em>testing</em> significa probar).`
+                );
+                flaggedWordsForPractice.add("testing");
+                flaggedWordsForPractice.add(w);
+            }
+        }
+
+        for (let i = 0; i < words.length - 1; i++) {
+            const pair = `${words[i]} ${words[i + 1]}`;
+            if (pair === "make sure" && words[i + 2] === "if") {
+                syntaxAndLexicalIssues.push(
+                    `Sintaxis: en inglés formal/natural se prefiere "<strong>make sure whether</strong>" o "<strong>make sure that</strong>" en vez de "<em>make sure if</em>".`
+                );
+            }
+            if ((pair === "told before" || pair === "say before") && words[i - 1] !== "had") {
+                syntaxAndLexicalIssues.push(
+                    `Sintaxis / colocación: en vez de "<strong>${pair}</strong>", es más natural decir "<strong>said before</strong>" o "<strong>mentioned earlier</strong>".`
+                );
+            }
+        }
+
         const rawTokens = spokenText.split(/\s+/).filter(Boolean);
-        const reviewWords = [];
-        const seenReview = new Set();
+        const lowConfWords = [];
+        const seenLowConf = new Set();
         let clearCount = 0;
 
         const highlightedTokens = rawTokens.map((tok, idx) => {
             const clean = tok.toLowerCase().replace(/[^a-z0-9']/g, "");
             if (!clean) return tok;
             const confObj = recordedWordsWithConfidence[idx];
-            const conf = confObj ? confObj.conf : 0.85;
-            const isClear = conf >= 0.55;
+            const conf = confObj ? Math.min(1, Math.max(0, confObj.conf)) : 0.85;
+            const isClear = conf >= 0.6;
 
             if (isClear) {
                 clearCount++;
                 return `<span class="word-ok">${tok}</span>`;
             } else {
                 const bareWord = tok.replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, "");
-                if (bareWord && !seenReview.has(bareWord.toLowerCase())) {
-                    seenReview.add(bareWord.toLowerCase());
-                    reviewWords.push(bareWord);
+                if (bareWord && !seenLowConf.has(bareWord.toLowerCase())) {
+                    seenLowConf.add(bareWord.toLowerCase());
+                    lowConfWords.push(bareWord);
                 }
                 return `<span class="word-miss">${tok}</span>`;
             }
         });
 
         const totalCleanTokens = rawTokens.filter(t => t.replace(/[^a-z0-9']/g, "").length > 0).length;
-        const pronRatio = totalCleanTokens > 0 ? (clearCount / totalCleanTokens) : 0;
-        const pronPoints = pronRatio * WEIGHT_PRONUNCIATION;
+        const pronRatio = totalCleanTokens > 0 ? Math.min(1, clearCount / totalCleanTokens) : 0;
+        const pronPoints = Math.min(WEIGHT_PRONUNCIATION, pronRatio * WEIGHT_PRONUNCIATION);
 
         const presentFound = Array.from(new Set(words.filter(w => presentIndicators.has(w))));
         const pastFound = Array.from(new Set(words.filter(w =>
@@ -706,8 +738,8 @@
         )));
         const futureFound = Array.from(new Set(words.filter(w => futureIndicators.has(w) || w.endsWith("'ll"))));
 
-        const hasPresent = presentFound.length >= 2;
-        const hasPast = pastFound.length >= 2;
+        const hasPresent = presentFound.length >= 1;
+        const hasPast = pastFound.length >= 1;
         const hasFuture = futureFound.length >= 1;
 
         const grammarIssues = [];
@@ -740,34 +772,41 @@
 
         const tensesCovered = (hasPresent ? 1 : 0) + (hasPast ? 1 : 0) + (hasFuture ? 1 : 0);
         const tensesScore = tensesCovered / 3;
-        const syntaxPenalty = Math.min(0.45, Math.max(0, grammarIssues.length - (3 - tensesCovered)) * 0.15);
-        const grammarRatio = Math.max(0, tensesScore - syntaxPenalty);
-        const grammarPoints = grammarRatio * WEIGHT_GRAMMAR;
+        const syntaxPenalty = Math.min(0.45, Math.max(0, (grammarIssues.length + syntaxAndLexicalIssues.length) - (3 - tensesCovered)) * 0.12);
+        const grammarRatio = Math.max(0, Math.min(1, tensesScore - syntaxPenalty));
+        const grammarPoints = Math.min(WEIGHT_GRAMMAR, grammarRatio * WEIGHT_GRAMMAR);
 
         const wpm = Math.round((wordCount / duration) * 60);
-        const volumeRatio = Math.min(1, wordCount / 35);
+        const volumeRatio = Math.min(1, wordCount / 30);
         let paceRatio = 1.0;
-        if (wpm < 35) paceRatio = 0.65;
-        else if (wpm > 150) paceRatio = 0.75;
+        if (wpm < 35) paceRatio = 0.7;
+        else if (wpm > 155) paceRatio = 0.75;
 
         let timeFactor = 1.0;
-        if (duration < MIN_TARGET_SEC) timeFactor = Math.max(0.45, duration / MIN_TARGET_SEC);
-        else if (duration > IDEAL_MAX_SEC) timeFactor = Math.max(0.65, 1 - ((duration - IDEAL_MAX_SEC) / 45));
+        if (duration < MIN_TARGET_SEC) timeFactor = Math.max(0.55, duration / MIN_TARGET_SEC);
+        else if (duration > IDEAL_MAX_SEC) timeFactor = Math.max(0.7, 1 - ((duration - IDEAL_MAX_SEC) / 45));
 
-        const fluencyRatio = ((volumeRatio * 0.5) + (paceRatio * 0.25) + (timeFactor * 0.25));
-        const fluencyPoints = fluencyRatio * WEIGHT_FLUENCY;
+        const fluencyRatio = Math.min(1, ((volumeRatio * 0.5) + (paceRatio * 0.25) + (timeFactor * 0.25)));
+        const fluencyPoints = Math.min(WEIGHT_FLUENCY, fluencyRatio * WEIGHT_FLUENCY);
 
         const hasMeaningContext = words.some(w => contextMeaningWords.has(w)) && hasPresent;
         const hasOpinionFutureContext = words.some(w => contextOpinionFutureWords.has(w)) && (hasPresent || hasFuture);
         const hasExamplePastContext = words.some(w => contextExamplePastWords.has(w)) && hasPast;
 
         const contextElements = (hasMeaningContext ? 1 : 0) + (hasOpinionFutureContext ? 1 : 0) + (hasExamplePastContext ? 1 : 0);
-        const contextRatio = contextElements / 3;
-        const contextPoints = contextRatio * WEIGHT_CONTEXT;
+        const contextRatio = Math.min(1, contextElements / 3);
+        const contextPoints = Math.min(WEIGHT_CONTEXT, contextRatio * WEIGHT_CONTEXT);
 
-        const finalGrade = (pronPoints + grammarPoints + fluencyPoints + contextPoints).toFixed(1);
+        const finalGrade = Math.min(10, pronPoints + grammarPoints + fluencyPoints + contextPoints).toFixed(1);
 
         document.getElementById("transcriptBox").innerHTML = highlightedTokens.join(" ") || "(Sin transcripción)";
+
+        const practiceList = Array.from(new Set([...lowConfWords, ...Array.from(flaggedWordsForPractice)]));
+        const chipsHtml = practiceList.length > 0
+            ? practiceList.map(w => `<button type="button" class="review-btn" onclick="speakWord('${w.replace(/'/g, "\\'")}')">🔊 ${w}</button>`).join("")
+            : `<span style="color:#15803d; font-size:0.92em;">✅ No se detectaron palabras mal pronunciadas ni sustituciones dudosas en tu grabación.</span>`;
+
+        const allFeedbackNotes = [...syntaxAndLexicalIssues, ...grammarIssues];
 
         let feedbackHtml = `
             <div class="ok-item">
@@ -778,25 +817,23 @@
             </div>
             <div class="ok-item">
                 <strong>Contexto del dicho / reflexión:</strong><br>
-                • <strong>Significado:</strong> ${hasMeaningContext ? "✅ Coherente" : "⚠️ Reforzar explicación del significado"}<br>
-                • <strong>Criterio / proyección:</strong> ${hasOpinionFutureContext ? "✅ Coherente" : "⚠️ Reforzar opinión o proyección futura"}<br>
-                • <strong>Ejemplo personal:</strong> ${hasExamplePastContext ? "✅ Coherente" : "⚠️ Reforzar ejemplo en pasado"}
+                • <strong>Significado / explicación:</strong> ${hasMeaningContext ? "✅ Coherente" : "⚠️ Reforzar explicación del significado"}<br>
+                • <strong>Criterio / intención:</strong> ${hasOpinionFutureContext ? "✅ Coherente" : "⚠️ Reforzar opinión o proyección futura"}<br>
+                • <strong>Ejemplo / antecedente:</strong> ${hasExamplePastContext ? "✅ Coherente" : "⚠️ Reforzar ejemplo o antecedente en pasado"}
             </div>
         `;
 
-        grammarIssues.forEach(issue => {
-            feedbackHtml += `<div class="issue-item"><strong>Corrección gramatical:</strong> ${issue}</div>`;
+        syntaxAndLexicalIssues.forEach(issue => {
+            feedbackHtml += `<div class="issue-item">${issue}</div>`;
         });
 
-        if (reviewWords.length > 0) {
-            feedbackHtml += `<div class="issue-item"><strong>Palabras mal pronunciadas o poco claras:</strong> ${reviewWords.join(", ")}</div>`;
-        }
+        grammarIssues.forEach(issue => {
+            feedbackHtml += `<div class="issue-item"><strong>Gramática:</strong> ${issue}</div>`;
+        });
 
-        const fallbackPractice = ["means", "opinion", "future", "learned", "happened", "example"];
-        const wordsToPractice = reviewWords.length > 0 ? reviewWords : fallbackPractice;
-        const chipsHtml = wordsToPractice
-            .map(w => `<button type="button" class="review-btn" onclick="speakWord('${w.replace(/'/g, "\\'")}')">🔊 ${w}</button>`)
-            .join("");
+        if (lowConfWords.length > 0) {
+            feedbackHtml += `<div class="issue-item"><strong>Palabras con baja claridad de pronunciación:</strong> ${lowConfWords.join(", ")}</div>`;
+        }
 
         const statusBannerHtml = mode === "evaluate_and_send"
             ? `<div class="send-status" id="sendStatusBox">Preparando envío de resultado y audio a ar17071@ues.edu.sv...</div>`
@@ -875,8 +912,8 @@
                 durationSec: duration,
                 contextScore: contextPoints.toFixed(2),
                 contextElements,
-                feedbackSummary: grammarIssues.map(x => x.replace(/<[^>]+>/g, "")).join(" | ") || "Buen desempeño general.",
-                mispronouncedWords: reviewWords.join(", "),
+                feedbackSummary: allFeedbackNotes.map(x => x.replace(/<[^>]+>/g, "")).join(" | ") || "Buen desempeño general.",
+                mispronouncedWords: practiceList.join(", "),
                 transcript: spokenText,
                 audioBase64,
                 audioMimeType
