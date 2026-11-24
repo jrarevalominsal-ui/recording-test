@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaking Evaluation: Pronunciation, Grammar, Fluency & Context</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.55;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        h1 { color: #5b21b6; margin: 0 0 4px 0; }
+        .subtitle { color: #64748b; margin: 0 0 20px 0; }
+        .student-grid {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .field-group label {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #334155;
+        }
+        .field-group input {
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95em;
+            background: #ffffff;
+        }
+        .topic-card {
+            background: #f5f3ff;
+            border-left: 5px solid #6d28d9;
+            padding: 18px;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 20px;
+        }
+        .structure-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .step-box {
+            background: #ffffff;
+            border: 1px solid #c4b5fd;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.92em;
+        }
+        .step-tag {
+            display: inline-block;
+            background: #6d28d9;
+            color: white;
+            font-size: 0.78em;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+        }
+        .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 18px;
+            margin: 16px 0;
+            background: #f8fafc;
+        }
+        .timer-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+        }
+        .timer-display {
+            font-size: 1.4em;
+            font-weight: 800;
+            font-family: monospace;
+            color: #0f172a;
+        }
+        .timer-goal {
+            font-size: 0.9em;
+            color: #475569;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        button.action-btn {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        button.action-btn:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .btn-rec { background: #dc2626; color: white; }
+        .btn-stop { background: #d97706; color: white; }
+        .btn-toggle-transcript {
+            background: #e0e7ff;
+            color: #3730a3;
+            border: 1px solid #a5b4fc;
+            padding: 8px 13px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.88em;
+            cursor: pointer;
+        }
+        .btn-toggle-transcript:hover { background: #c7d2fe; }
+        .btn-submit {
+            background: #6d28d9;
+            color: white;
+            padding: 15px 24px;
+            font-size: 1.05em;
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .confirm-prompt {
+            display: none;
+            margin-top: 16px;
+            padding: 18px;
+            border-radius: 10px;
+            background: #fefce8;
+            border: 2px solid #eab308;
+        }
+        .confirm-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .btn-eval-only {
+            background: #0d9488;
+            color: white;
+            flex: 1;
+            min-width: 220px;
+        }
+        .btn-eval-send {
+            background: #5b21b6;
+            color: white;
+            flex: 1;
+            min-width: 220px;
+        }
+        .btn-cancel {
+            background: #64748b;
+            color: white;
+        }
+
+        .live-status { font-size: 0.92em; font-weight: bold; color: #475569; }
+        .recording-active { color: #dc2626; }
+        .transcript-section {
+            display: none;
+            margin-top: 12px;
+        }
+        .transcript-box {
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 14px;
+            min-height: 85px;
+            font-size: 1.02em;
+            color: #0f172a;
+        }
+        .audio-preview {
+            margin-top: 12px;
+            display: none;
+        }
+        .audio-preview audio {
+            width: 100%;
+        }
+        .word-ok { color: #15803d; font-weight: 600; background: #dcfce7; padding: 1px 4px; border-radius: 4px; }
+        .word-miss { color: #b91c1c; font-weight: 600; background: #fee2e2; padding: 1px 4px; border-radius: 4px; text-decoration: underline; }
+
+        .final-summary {
+            margin-top: 24px;
+            padding: 24px;
+            border-radius: 12px;
+            background: #f0fdf4;
+            border: 2px solid #16a34a;
+            display: none;
+        }
+        .grade-banner {
+            background: #ffffff;
+            border: 2px solid #6d28d9;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .grade-number {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: #6d28d9;
+            line-height: 1.1;
+        }
+        .rubric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .rubric-item {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+        }
+        .correction-box {
+            background: #ffffff;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .issue-item {
+            background: #fef2f2;
+            border-left: 4px solid #dc2626;
+            padding: 10px 12px;
+            margin: 8px 0;
+            border-radius: 0 6px 6px 0;
+            color: #7f1d1d;
+        }
+        .ok-item {
+            background: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            padding: 10px 12px;
+            margin: 8px 0;
+            border-radius: 0 6px 6px 0;
+            color: #14532d;
+        }
+        .send-status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.94em;
+            font-weight: 600;
+            background: #eff6ff;
+            color: #1e3a8a;
+            border: 1px solid #bfdbfe;
+        }
+        .review-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .review-btn {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .review-btn:hover { background: #fecaca; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Speaking Evaluation: Saying or Reflection</h1>
+    <p class="subtitle">Evaluación de Pronunciación, Gramática (Presente, Pasado y Futuro), Fluidez y Contexto.</p>
+
+    <div class="student-grid">
+        <div class="field-group">
+            <label for="studentName">Nombre del estudiante *</label>
+            <input type="text" id="studentName" placeholder="Ej. María Elena López">
+        </div>
+        <div class="field-group">
+            <label for="examDate">Fecha en que se realiza *</label>
+            <input type="date" id="examDate">
+        </div>
+        <div class="field-group">
+            <label for="studentCourse">Curso (opcional)</label>
+            <input type="text" id="studentCourse" placeholder="Ej. Inglés Básico (opcional)">
+        </div>
+    </div>
+
+    <div class="topic-card">
+        <strong>Indicación del tema (dicho o reflexión asignado por tu docente):</strong>
+        <p style="margin:8px 0 10px;">
+            Explica en inglés el dicho o reflexión asignado por tu docente (meta sugerida: <strong>30s – 75s</strong>). Se evaluarán <strong>Pronunciación</strong>, <strong>Gramática</strong> (Presente, Pasado y Futuro), <strong>Fluidez</strong> y <strong>Contexto</strong>:
+        </p>
+        <div class="structure-grid">
+            <div class="step-box">
+                <span class="step-tag">1. Significado · Presente</span><br>
+                Explica qué significa el dicho.<br>
+                <em>"This saying means that..." / "People say this when..."</em>
+            </div>
+            <div class="step-box">
+                <span class="step-tag">2. Criterio · Presente / Futuro</span><br>
+                Da tu opinión y cómo lo aplicarás.<br>
+                <em>"I think / I agree because..." / "In the future, I will..."</em>
+            </div>
+            <div class="step-box">
+                <span class="step-tag">3. Ejemplo · Pasado</span><br>
+                Cuenta una experiencia pasada.<br>
+                <em>"For example, last year I..." / "When I was..."</em>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="timer-bar">
+            <div>
+                <span style="font-size:0.9em; font-weight:bold; color:#475569;">Tiempo de grabación:</span>
+                <span class="timer-display" id="timerDisplay">00:00</span>
+            </div>
+            <div class="timer-goal">Meta sugerida: <strong>30s – 75s</strong> (máx. 90s)</div>
+        </div>
+
+        <div class="controls">
+            <button type="button" class="action-btn btn-rec" id="btnRec" onclick="startRecording()">🎤 Iniciar grabación</button>
+            <button type="button" class="action-btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>⏹️ Detener</button>
+            <button type="button" class="btn-toggle-transcript" id="btnToggleTranscript" onclick="toggleTranscriptBox()">👁️ Ver transcripción</button>
+            <span class="live-status" id="liveStatus">Listo para grabar</span>
+        </div>
+
+        <div class="transcript-section" id="transcriptSection">
+            <div style="font-size:0.9em; font-weight:bold; color:#475569; margin-bottom:6px;">Transcripción y revisión de pronunciación:</div>
+            <div class="transcript-box" id="transcriptBox">Aún no has grabado nada...</div>
+        </div>
+
+        <div class="audio-preview" id="audioPreviewBox">
+            <div style="font-size:0.88em; font-weight:bold; color:#475569; margin-bottom:4px;">Tu audio grabado:</div>
+            <audio id="recordedAudioPlayer" controls></audio>
+        </div>
+    </div>
+
+    <button type="button" class="action-btn btn-submit" id="btnSubmit" onclick="openSubmissionPrompt()">Evaluar</button>
+
+    <div class="confirm-prompt" id="confirmPromptBox">
+        <strong>¿Cómo deseas continuar?</strong>
+        <p style="margin:6px 0 0; font-size:0.94em; color:#422006;">
+            Elige si quieres solo ver tu score, correcciones y practicar pronunciación, o también enviar tu resultado y audio al docente.
+        </p>
+        <div class="confirm-actions">
+            <button type="button" class="action-btn btn-eval-only" onclick="executeEvaluation('evaluate_only')">
+                Solo evaluar, ver resultado y practicar
+            </button>
+            <button type="button" class="action-btn btn-eval-send" onclick="executeEvaluation('evaluate_and_send')">
+                Evaluar y enviar resultado y audio al docente
+            </button>
+            <button type="button" class="action-btn btn-cancel" onclick="closeSubmissionPrompt()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="final-summary" id="finalSummary"></div>
+</div>
+
+<script>
+    const APPS_SCRIPT_URL = "";
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const WEIGHT_PRONUNCIATION = 2.5;
+    const WEIGHT_GRAMMAR = 2.5;
+    const WEIGHT_FLUENCY = 2.5;
+    const WEIGHT_CONTEXT = 2.5;
+
+    const MIN_TARGET_SEC = 30;
+    const IDEAL_MAX_SEC = 75;
+    const HARD_MAX_SEC = 90;
+
+    let recognition = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlobGlobal = null;
+    let finalTranscript = "";
+    let elapsedSeconds = 0;
+    let timerInterval = null;
+    let recordedWordsWithConfidence = [];
+
+    const irregularPastCorrections = {
+        "goed": "went", "haved": "had", "doed": "did", "seed": "saw", "eated": "ate",
+        "drinked": "drank", "rided": "rode", "swimmed": "swam", "runned": "ran",
+        "winned": "won", "waked": "woke", "meeted": "met", "getted": "got",
+        "telled": "told", "maked": "made", "knowed": "knew", "thinked": "thought", "feeld": "felt"
+    };
+
+    const presentIndicators = new Set([
+        "is", "are", "am", "means", "mean", "think", "believe", "agree", "disagree",
+        "opinion", "important", "helps", "help", "shows", "show", "says", "say",
+        "people", "life", "always", "usually", "sometimes", "true", "because"
+    ]);
+
+    const pastIndicators = new Set([
+        "was", "were", "went", "had", "did", "saw", "ate", "drank", "rode",
+        "swam", "ran", "won", "woke", "met", "got", "made", "came", "bought",
+        "told", "knew", "thought", "felt", "learned", "learnt", "helped",
+        "tried", "worked", "practiced", "happened", "changed", "realized",
+        "started", "finished", "decided", "stayed", "understood", "yesterday", "ago", "last"
+    ]);
+
+    const futureIndicators = new Set([
+        "will", "won't", "going", "gonna", "tomorrow", "next", "future", "plan", "hope", "want"
+    ]);
+
+    const contextMeaningWords = new Set(["means", "mean", "saying", "quote", "reflection", "message", "lesson", "value", "people", "life", "when"]);
+    const contextOpinionFutureWords = new Set(["think", "believe", "agree", "disagree", "opinion", "important", "future", "will", "going", "gonna", "apply", "plan", "hope"]);
+    const contextExamplePastWords = new Set(["example", "instance", "story", "experience", "happened", "last", "ago", "yesterday", "when", "was", "were", "went", "had", "did", "learned"]);
+
+    function toggleTranscriptBox() {
+        const sec = document.getElementById("transcriptSection");
+        const btn = document.getElementById("btnToggleTranscript");
+        const isOpen = sec.style.display === "block";
+        sec.style.display = isOpen ? "none" : "block";
+        btn.innerText = isOpen ? "👁️ Ver transcripción" : "🙈 Ocultar transcripción";
+    }
+
+    function setDefaultDate() {
+        const dateInput = document.getElementById("examDate");
+        if (!dateInput.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+    }
+
+    function formatTime(sec) {
+        const mins = String(Math.floor(sec / 60)).padStart(2, "0");
+        const rem = String(sec % 60).padStart(2, "0");
+        return `${mins}:${rem}`;
+    }
+
+    function speakWord(word) {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = "en-US";
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        document.getElementById("timerDisplay").innerText = "00:00";
+        timerInterval = setInterval(() => {
+            elapsedSeconds++;
+            document.getElementById("timerDisplay").innerText = formatTime(elapsedSeconds);
+            if (elapsedSeconds >= HARD_MAX_SEC) {
+                stopRecording();
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    async function startRecording() {
+        if (!SpeechRecognition) {
+            alert("Tu navegador no soporta reconocimiento de voz integrado. Usa Google Chrome o Microsoft Edge.");
+            return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Tu navegador no permite grabar audio desde el micrófono.");
+            return;
+        }
+
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+            alert("No se pudo acceder al micrófono: " + err.message);
+            return;
+        }
+
+        audioChunks = [];
+        audioBlobGlobal = null;
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            audioBlobGlobal = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+            const url = URL.createObjectURL(audioBlobGlobal);
+            const player = document.getElementById("recordedAudioPlayer");
+            player.src = url;
+            document.getElementById("audioPreviewBox").style.display = "block";
+        };
+        mediaRecorder.start();
+
+        finalTranscript = "";
+        recordedWordsWithConfidence = [];
+        recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+            let interim = "";
+            let tempFinal = "";
+            const tempConfidenceList = [];
+
+            for (let i = 0; i < event.results.length; i++) {
+                const res = event.results[i];
+                const alt = res[0];
+                const txt = alt.transcript.trim();
+                const conf = typeof alt.confidence === "number" ? alt.confidence : 0.85;
+
+                if (res.isFinal) {
+                    tempFinal += txt + " ";
+                    txt.split(/\s+/).filter(Boolean).forEach(w => {
+                        tempConfidenceList.push({ word: w, conf });
+                    });
+                } else {
+                    interim += txt + " ";
+                }
+            }
+
+            finalTranscript = tempFinal.trim();
+            recordedWordsWithConfidence = tempConfidenceList;
+
+            const preview = (finalTranscript + " " + interim).trim();
+            document.getElementById("transcriptBox").innerText = preview || "Escuchando...";
+            document.getElementById("liveStatus").innerHTML = `<span class="recording-active">● Grabando voz y audio...</span>`;
+        };
+
+        recognition.onerror = (e) => {
+            document.getElementById("liveStatus").innerText = `Aviso de reconocimiento: ${e.error}`;
+        };
+
+        recognition.onend = () => {
+            stopTimer();
+            document.getElementById("btnRec").disabled = false;
+            document.getElementById("btnStop").disabled = true;
+            document.getElementById("liveStatus").innerText = `Grabación detenida (${formatTime(elapsedSeconds)})`;
+        };
+
+        recognition.start();
+        startTimer();
+        document.getElementById("btnRec").disabled = true;
+        document.getElementById("btnStop").disabled = false;
+        document.getElementById("liveStatus").innerHTML = `<span class="recording-active">● Grabando voz y audio...</span>`;
+    }
+
+    function stopRecording() {
+        stopTimer();
+        if (recognition) {
+            try { recognition.stop(); } catch (_) {}
+        }
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            try { mediaRecorder.stop(); } catch (_) {}
+        }
+    }
+
+    function openSubmissionPrompt() {
+        const studentName = document.getElementById("studentName").value.trim();
+        const examDate = document.getElementById("examDate").value;
+        const fallbackText = document.getElementById("transcriptBox").innerText.trim();
+        const spokenText = finalTranscript || (fallbackText !== "Aún no has grabado nada..." ? fallbackText : "");
+
+        if (!studentName || !examDate) {
+            alert("Por favor completa Nombre del estudiante y Fecha antes de evaluar.");
+            return;
+        }
+        if (!spokenText && !audioBlobGlobal && (!mediaRecorder || mediaRecorder.state === "inactive")) {
+            alert("Primero graba tu explicación en voz alta antes de evaluar.");
+            return;
+        }
+
+        stopRecording();
+        document.getElementById("confirmPromptBox").style.display = "block";
+        document.getElementById("confirmPromptBox").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function closeSubmissionPrompt() {
+        document.getElementById("confirmPromptBox").style.display = "none";
+    }
+
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64 = reader.result.split(",")[1] || "";
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function sendResultToTeacher(payload) {
+        const statusEl = document.getElementById("sendStatusBox");
+        if (!APPS_SCRIPT_URL) {
+            statusEl.style.background = "#fef3c7";
+            statusEl.style.color = "#92400e";
+            statusEl.style.borderColor = "#fcd34d";
+            statusEl.innerText = "⚠️ No hay una URL de Google Apps Script configurada en APPS_SCRIPT_URL para enviar el correo a ar17071@ues.edu.sv.";
+            return;
+        }
+
+        try {
+            statusEl.innerText = "⏳ Enviando resultado y audio a ar17071@ues.edu.sv...";
+            await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            statusEl.style.background = "#dcfce7";
+            statusEl.style.color = "#166534";
+            statusEl.style.borderColor = "#86efac";
+            statusEl.innerText = "✅ Resultado y audio enviados a ar17071@ues.edu.sv.";
+        } catch (err) {
+            statusEl.style.background = "#fee2e2";
+            statusEl.style.color = "#991b1b";
+            statusEl.style.borderColor = "#fca5a5";
+            statusEl.innerText = "❌ No se pudo enviar la entrega: " + err.message;
+        }
+    }
+
+    async function executeEvaluation(mode) {
+        document.getElementById("confirmPromptBox").style.display = "none";
+        await new Promise(r => setTimeout(r, 350));
+
+        const studentName = document.getElementById("studentName").value.trim();
+        const examDate = document.getElementById("examDate").value;
+        const studentCourse = document.getElementById("studentCourse").value.trim() || "No especificado";
+
+        const fallbackText = document.getElementById("transcriptBox").innerText.trim();
+        const spokenText = finalTranscript || (fallbackText !== "Aún no has grabado nada..." ? fallbackText : "");
+
+        const words = spokenText
+            .toLowerCase()
+            .replace(/[^a-z0-9\s']/g, "")
+            .split(/\s+/)
+            .filter(Boolean);
+
+        const wordCount = words.length;
+        const duration = Math.max(1, elapsedSeconds);
+
+        const rawTokens = spokenText.split(/\s+/).filter(Boolean);
+        const reviewWords = [];
+        const seenReview = new Set();
+        let clearCount = 0;
+
+        const highlightedTokens = rawTokens.map((tok, idx) => {
+            const clean = tok.toLowerCase().replace(/[^a-z0-9']/g, "");
+            if (!clean) return tok;
+            const confObj = recordedWordsWithConfidence[idx];
+            const conf = confObj ? confObj.conf : 0.85;
+            const isClear = conf >= 0.55;
+
+            if (isClear) {
+                clearCount++;
+                return `<span class="word-ok">${tok}</span>`;
+            } else {
+                const bareWord = tok.replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, "");
+                if (bareWord && !seenReview.has(bareWord.toLowerCase())) {
+                    seenReview.add(bareWord.toLowerCase());
+                    reviewWords.push(bareWord);
+                }
+                return `<span class="word-miss">${tok}</span>`;
+            }
+        });
+
+        const totalCleanTokens = rawTokens.filter(t => t.replace(/[^a-z0-9']/g, "").length > 0).length;
+        const pronRatio = totalCleanTokens > 0 ? (clearCount / totalCleanTokens) : 0;
+        const pronPoints = pronRatio * WEIGHT_PRONUNCIATION;
+
+        const presentFound = Array.from(new Set(words.filter(w => presentIndicators.has(w))));
+        const pastFound = Array.from(new Set(words.filter(w =>
+            pastIndicators.has(w) || (w.length > 3 && w.endsWith("ed") && !irregularPastCorrections[w])
+        )));
+        const futureFound = Array.from(new Set(words.filter(w => futureIndicators.has(w) || w.endsWith("'ll"))));
+
+        const hasPresent = presentFound.length >= 2;
+        const hasPast = pastFound.length >= 2;
+        const hasFuture = futureFound.length >= 1;
+
+        const grammarIssues = [];
+        words.forEach(w => {
+            if (irregularPastCorrections[w]) {
+                grammarIssues.push(`En pasado simple usa "<strong>${irregularPastCorrections[w]}</strong>" en vez de "<strong>${w}</strong>".`);
+            }
+        });
+
+        for (let i = 0; i < words.length - 1; i++) {
+            const pair = `${words[i]} ${words[i + 1]}`;
+            if (["didnt went", "didnt played", "didnt watched", "didnt had", "didnt saw", "didnt ate", "didnt told", "didnt made", "didnt learned"].includes(pair)) {
+                const verb = words[i + 1];
+                const base = verb === "went" ? "go" :
+                             verb === "had" ? "have" :
+                             verb === "saw" ? "see" :
+                             verb === "ate" ? "eat" :
+                             verb === "told" ? "tell" :
+                             verb === "made" ? "make" : verb.replace(/ed$/, "");
+                grammarIssues.push(`Tras <em>didn't</em> usa el verbo base: en vez de "<strong>${pair}</strong>", di "<strong>didn't ${base}</strong>".`);
+            }
+            if (["will went", "will played", "will did", "will had", "will made"].includes(pair)) {
+                grammarIssues.push(`Después de <em>will</em> usa el verbo en forma base, no en pasado ("<strong>${pair}</strong>").`);
+            }
+        }
+
+        if (!hasPresent) grammarIssues.push("Faltó o fue insuficiente el uso de <strong>Presente</strong> para explicar el significado o criterio.");
+        if (!hasPast) grammarIssues.push("Faltó o fue insuficiente el uso de <strong>Pasado</strong> para presentar un ejemplo o experiencia.");
+        if (!hasFuture) grammarIssues.push("Faltó incluir una proyección o intención en <strong>Futuro</strong>.");
+
+        const tensesCovered = (hasPresent ? 1 : 0) + (hasPast ? 1 : 0) + (hasFuture ? 1 : 0);
+        const tensesScore = tensesCovered / 3;
+        const syntaxPenalty = Math.min(0.45, Math.max(0, grammarIssues.length - (3 - tensesCovered)) * 0.15);
+        const grammarRatio = Math.max(0, tensesScore - syntaxPenalty);
+        const grammarPoints = grammarRatio * WEIGHT_GRAMMAR;
+
+        const wpm = Math.round((wordCount / duration) * 60);
+        const volumeRatio = Math.min(1, wordCount / 35);
+        let paceRatio = 1.0;
+        if (wpm < 35) paceRatio = 0.65;
+        else if (wpm > 150) paceRatio = 0.75;
+
+        let timeFactor = 1.0;
+        if (duration < MIN_TARGET_SEC) timeFactor = Math.max(0.45, duration / MIN_TARGET_SEC);
+        else if (duration > IDEAL_MAX_SEC) timeFactor = Math.max(0.65, 1 - ((duration - IDEAL_MAX_SEC) / 45));
+
+        const fluencyRatio = ((volumeRatio * 0.5) + (paceRatio * 0.25) + (timeFactor * 0.25));
+        const fluencyPoints = fluencyRatio * WEIGHT_FLUENCY;
+
+        const hasMeaningContext = words.some(w => contextMeaningWords.has(w)) && hasPresent;
+        const hasOpinionFutureContext = words.some(w => contextOpinionFutureWords.has(w)) && (hasPresent || hasFuture);
+        const hasExamplePastContext = words.some(w => contextExamplePastWords.has(w)) && hasPast;
+
+        const contextElements = (hasMeaningContext ? 1 : 0) + (hasOpinionFutureContext ? 1 : 0) + (hasExamplePastContext ? 1 : 0);
+        const contextRatio = contextElements / 3;
+        const contextPoints = contextRatio * WEIGHT_CONTEXT;
+
+        const finalGrade = (pronPoints + grammarPoints + fluencyPoints + contextPoints).toFixed(1);
+
+        document.getElementById("transcriptBox").innerHTML = highlightedTokens.join(" ") || "(Sin transcripción)";
+
+        let feedbackHtml = `
+            <div class="ok-item">
+                <strong>Gramática — Tiempos verbales:</strong><br>
+                • <strong>Presente:</strong> ${hasPresent ? `✅ Detectado (${presentFound.slice(0, 5).join(", ")})` : "⚠️ Insuficiente"}<br>
+                • <strong>Pasado:</strong> ${hasPast ? `✅ Detectado (${pastFound.slice(0, 5).join(", ")})` : "⚠️ Insuficiente"}<br>
+                • <strong>Futuro:</strong> ${hasFuture ? `✅ Detectado (${futureFound.slice(0, 4).join(", ")})` : "⚠️ Insuficiente"}
+            </div>
+            <div class="ok-item">
+                <strong>Contexto del dicho / reflexión:</strong><br>
+                • <strong>Significado:</strong> ${hasMeaningContext ? "✅ Coherente" : "⚠️ Reforzar explicación del significado"}<br>
+                • <strong>Criterio / proyección:</strong> ${hasOpinionFutureContext ? "✅ Coherente" : "⚠️ Reforzar opinión o proyección futura"}<br>
+                • <strong>Ejemplo personal:</strong> ${hasExamplePastContext ? "✅ Coherente" : "⚠️ Reforzar ejemplo en pasado"}
+            </div>
+        `;
+
+        grammarIssues.forEach(issue => {
+            feedbackHtml += `<div class="issue-item"><strong>Corrección gramatical:</strong> ${issue}</div>`;
+        });
+
+        if (reviewWords.length > 0) {
+            feedbackHtml += `<div class="issue-item"><strong>Palabras mal pronunciadas o poco claras:</strong> ${reviewWords.join(", ")}</div>`;
+        }
+
+        const fallbackPractice = ["means", "opinion", "future", "learned", "happened", "example"];
+        const wordsToPractice = reviewWords.length > 0 ? reviewWords : fallbackPractice;
+        const chipsHtml = wordsToPractice
+            .map(w => `<button type="button" class="review-btn" onclick="speakWord('${w.replace(/'/g, "\\'")}')">🔊 ${w}</button>`)
+            .join("");
+
+        const statusBannerHtml = mode === "evaluate_and_send"
+            ? `<div class="send-status" id="sendStatusBox">Preparando envío de resultado y audio a ar17071@ues.edu.sv...</div>`
+            : `<div class="send-status" style="background:#f1f5f9; color:#334155; border-color:#cbd5e1;">ℹ️ Modo <strong>Solo evaluar</strong>: revisa tu score, correcciones y practica las palabras marcadas. No se envió al docente.</div>`;
+
+        document.getElementById("btnRec").disabled = true;
+        document.getElementById("btnStop").disabled = true;
+        document.getElementById("btnSubmit").disabled = true;
+        document.getElementById("studentName").disabled = true;
+        document.getElementById("examDate").disabled = true;
+        document.getElementById("studentCourse").disabled = true;
+
+        const summary = document.getElementById("finalSummary");
+        summary.style.display = "block";
+        summary.innerHTML = `
+            <h3>Resultado de Speaking — ${studentName}</h3>
+            <p><strong>Curso:</strong> ${studentCourse} | <strong>Fecha:</strong> ${examDate} | <strong>Duración:</strong> ${formatTime(duration)}</p>
+            <div class="grade-banner">
+                <div>Score Final (Escala 0.0 a 10.0)</div>
+                <div class="grade-number">${finalGrade} / 10.0</div>
+            </div>
+            <div class="rubric-grid">
+                <div class="rubric-item">
+                    <strong>1. Pronunciación:</strong><br>
+                    ${pronPoints.toFixed(2)} / ${WEIGHT_PRONUNCIATION.toFixed(1)} pts<br>
+                    <small>${Math.round(pronRatio * 100)}% claridad</small>
+                </div>
+                <div class="rubric-item">
+                    <strong>2. Gramática:</strong><br>
+                    ${grammarPoints.toFixed(2)} / ${WEIGHT_GRAMMAR.toFixed(1)} pts<br>
+                    <small>${tensesCovered}/3 tiempos verbales</small>
+                </div>
+                <div class="rubric-item">
+                    <strong>3. Fluidez:</strong><br>
+                    ${fluencyPoints.toFixed(2)} / ${WEIGHT_FLUENCY.toFixed(1)} pts<br>
+                    <small>${wordCount} palabras (~${wpm} WPM)</small>
+                </div>
+                <div class="rubric-item">
+                    <strong>4. Contexto:</strong><br>
+                    ${contextPoints.toFixed(2)} / ${WEIGHT_CONTEXT.toFixed(1)} pts<br>
+                    <small>${contextElements}/3 elementos del tema</small>
+                </div>
+            </div>
+            ${statusBannerHtml}
+            <div class="correction-box">
+                ${feedbackHtml}
+                <div style="margin-top:14px;">
+                    <strong>Corrección y práctica de pronunciación (haz clic para escuchar):</strong>
+                    <div class="review-chips">${chipsHtml}</div>
+                </div>
+            </div>
+        `;
+        summary.scrollIntoView({ behavior: "smooth" });
+
+        if (mode === "evaluate_and_send") {
+            let audioBase64 = "";
+            let audioMimeType = "";
+            if (audioBlobGlobal) {
+                audioBase64 = await blobToBase64(audioBlobGlobal);
+                audioMimeType = audioBlobGlobal.type || "audio/webm";
+            }
+
+            await sendResultToTeacher({
+                submissionMode: mode,
+                studentName,
+                examDate,
+                studentCourse,
+                finalGrade,
+                pronunciationScore: pronPoints.toFixed(2),
+                pronunciationPct: Math.round(pronRatio * 100),
+                grammarScore: grammarPoints.toFixed(2),
+                tensesCovered,
+                fluencyScore: fluencyPoints.toFixed(2),
+                wordCount,
+                wpm,
+                durationSec: duration,
+                contextScore: contextPoints.toFixed(2),
+                contextElements,
+                feedbackSummary: grammarIssues.map(x => x.replace(/<[^>]+>/g, "")).join(" | ") || "Buen desempeño general.",
+                mispronouncedWords: reviewWords.join(", "),
+                transcript: spokenText,
+                audioBase64,
+                audioMimeType
+            });
+        }
+    }
+
+    setDefaultDate();
+</script>
+
+</body>
+</html>
